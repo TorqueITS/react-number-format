@@ -1,5 +1,5 @@
 /*!
- * react-number-format - 1.1.2
+ * react-number-format - 1.1.2-trq
  * Author : Sudhanshu Yadav
  * Copyright (c) 2016,2017 to Sudhanshu Yadav - ignitersworld.com , released under the MIT license.
  */
@@ -99,10 +99,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	  format: _react.PropTypes.oneOfType([_react.PropTypes.string, _react.PropTypes.func]),
 	  mask: _react.PropTypes.string,
 	  value: _react.PropTypes.oneOfType([_react.PropTypes.number, _react.PropTypes.string]),
-	  customInput: _react.PropTypes.func
+	  customInput: _react.PropTypes.func,
+	  allowNegative: _react.PropTypes.bool,
+	  onKeyDown: _react.PropTypes.func,
+	  onChange: _react.PropTypes.func
 	};
 
 	var defaultProps = {
+	  id: 'number_format',
 	  displayType: 'input',
 	  decimalSeparator: '.',
 	  decimalPrecision: false
@@ -117,7 +121,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var _this = _possibleConstructorReturn(this, (NumberFormat.__proto__ || Object.getPrototypeOf(NumberFormat)).call(this, props));
 
 	    _this.state = {
-	      value: _this.formatInput(props.value).formattedValue
+	      value: props.value
 	    };
 	    _this.onChange = _this.onChange.bind(_this);
 	    _this.onKeyDown = _this.onKeyDown.bind(_this);
@@ -129,7 +133,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function componentWillReceiveProps(newProps) {
 	      if (newProps.value !== this.props.value) {
 	        this.setState({
-	          value: this.formatInput(newProps.value).formattedValue
+	          value: newProps.value
 	        });
 	      }
 	    }
@@ -245,6 +249,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	      //change val to string if its number
 	      if (typeof val === 'number') val = val + '';
 
+	      var negativeRegex = new RegExp('(-)');
+	      var doubleNegativeRegex = new RegExp('(-)(.)*(-)');
+
+	      // Check number has '-' value
+	      var hasNegative = negativeRegex.test(val);
+	      // Check number has 2 or more '-' values
+	      var removeNegative = doubleNegativeRegex.test(val);
+
 	      if (!val || !val.match(numRegex)) return { value: '', formattedValue: maskPattern ? '' : '' };
 	      var num = val.match(numRegex).join('');
 
@@ -285,6 +297,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        //add prefix and suffix
 	        if (prefix) beforeDecimal = prefix + beforeDecimal;
 	        if (suffix) afterDecimal = afterDecimal + suffix;
+
+	        if (this.props.allowNegative && hasNegative && !removeNegative) beforeDecimal = '-' + beforeDecimal;
 
 	        formattedValue = beforeDecimal + (hasDecimals && decimalSeparator || '') + afterDecimal;
 	      }
@@ -359,15 +373,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var key = e.key;
 
 	      var numRegex = this.getNumberRegex(false, decimalPrecision !== false);
+	      var negativeRegex = new RegExp('-');
 	      //Handle backspace and delete against non numerical/decimal characters
 	      if (selectionEnd - selectionStart === 0) {
-	        if (key === 'Delete' && !numRegex.test(value[selectionStart])) {
+	        if (key === 'Delete' && !numRegex.test(value[selectionStart]) && !negativeRegex.test(value[selectionStart])) {
 	          e.preventDefault();
 	          var nextCursorPosition = selectionStart;
 	          while (!numRegex.test(value[nextCursorPosition]) && nextCursorPosition < value.length) {
 	            nextCursorPosition++;
 	          }this.setCaretPosition(el, nextCursorPosition);
-	        } else if (key === 'Backspace' && !numRegex.test(value[selectionStart - 1])) {
+	        } else if (key === 'Backspace' && !numRegex.test(value[selectionStart - 1]) && !negativeRegex.test(value[selectionStart - 1])) {
 	          e.preventDefault();
 	          var prevCursorPosition = selectionStart;
 	          while (!numRegex.test(value[prevCursorPosition - 1]) && prevCursorPosition > 0) {
@@ -389,7 +404,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      var inputProps = _extends({}, props, {
 	        type: 'text',
-	        value: this.state.value,
+	        value: this.formatInput(this.state.value).formattedValue,
 	        onChange: this.onChange,
 	        onKeyDown: this.onKeyDown
 	      });
