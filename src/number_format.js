@@ -21,10 +21,14 @@ const propTypes = {
     PropTypes.number,
     PropTypes.string
   ]),
-  customInput: PropTypes.func
+  customInput: PropTypes.func,
+  allowNegative: PropTypes.bool,
+  onKeyDown: PropTypes.func,
+  onChange: PropTypes.func
 };
 
 const defaultProps = {
+  id: 'number_format',
   displayType: 'input',
   decimalSeparator: '.',
   decimalPrecision: false
@@ -34,7 +38,7 @@ class NumberFormat extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      value: this.formatInput(props.value).formattedValue
+      value: props.value
     }
     this.onChange = this.onChange.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
@@ -43,7 +47,7 @@ class NumberFormat extends React.Component {
   componentWillReceiveProps(newProps) {
     if(newProps.value !== this.props.value) {
       this.setState({
-        value : this.formatInput(newProps.value).formattedValue
+        value : newProps.value
       });
     }
   }
@@ -136,6 +140,14 @@ class NumberFormat extends React.Component {
     //change val to string if its number
     if(typeof val === 'number') val = val + '';
 
+    const negativeRegex = new RegExp('(-)');
+    const doubleNegativeRegex = new RegExp('(-)(.)*(-)');
+
+    // Check number has '-' value
+    const hasNegative = negativeRegex.test(val);
+    // Check number has 2 or more '-' values
+    const removeNegative = doubleNegativeRegex.test(val);
+
     if(!val || !(val.match(numRegex))) return {value :'', formattedValue: (maskPattern ? '' : '')}
     const num = val.match(numRegex).join('');
 
@@ -177,6 +189,8 @@ class NumberFormat extends React.Component {
       //add prefix and suffix
       if(prefix) beforeDecimal = prefix + beforeDecimal;
       if(suffix) afterDecimal = afterDecimal + suffix;
+
+      if (this.props.allowNegative && hasNegative && !removeNegative) beforeDecimal = '-' + beforeDecimal;
 
       formattedValue = beforeDecimal + (hasDecimals && decimalSeparator ||  '') + afterDecimal;
     }
@@ -233,14 +247,15 @@ class NumberFormat extends React.Component {
     const {decimalPrecision} = this.props;
     const {key} = e;
     const numRegex = this.getNumberRegex(false, decimalPrecision !== false);
+    const negativeRegex = new RegExp('-');
     //Handle backspace and delete against non numerical/decimal characters
     if(selectionEnd - selectionStart === 0) {
-      if (key === 'Delete' && !numRegex.test(value[selectionStart])) {
+      if (key === 'Delete' && !numRegex.test(value[selectionStart]) && !negativeRegex.test(value[selectionStart])) {
         e.preventDefault();
         let nextCursorPosition = selectionStart;
         while (!numRegex.test(value[nextCursorPosition]) && nextCursorPosition < value.length) nextCursorPosition++;
         this.setCaretPosition(el, nextCursorPosition);
-      } else if (key === 'Backspace' && !numRegex.test(value[selectionStart - 1])) {
+      } else if (key === 'Backspace' && !numRegex.test(value[selectionStart - 1]) && !negativeRegex.test(value[selectionStart-1])) {
         e.preventDefault();
         let prevCursorPosition = selectionStart;
         while (!numRegex.test(value[prevCursorPosition - 1]) && prevCursorPosition > 0) prevCursorPosition--;
@@ -259,7 +274,7 @@ class NumberFormat extends React.Component {
 
     const inputProps = Object.assign({}, props, {
       type:'text',
-      value:this.state.value,
+      value:this.formatInput(this.state.value).formattedValue,
       onChange:this.onChange,
       onKeyDown:this.onKeyDown,
     })
