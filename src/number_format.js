@@ -39,7 +39,7 @@ class NumberFormat extends React.Component {
     super(props);
     this.state = {
       value: props.value
-    }
+    };
     this.onChange = this.onChange.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
   }
@@ -55,7 +55,7 @@ class NumberFormat extends React.Component {
   getSeparators() {
     let {thousandSeparator, decimalSeparator} = this.props;
     if (thousandSeparator === true) {
-      thousandSeparator = ','
+      thousandSeparator = ',';
     }
 
     if (decimalSeparator && thousandSeparator && typeof decimalSeparator !== 'string') {
@@ -67,13 +67,13 @@ class NumberFormat extends React.Component {
     }
 
     if (decimalSeparator === true) {
-      decimalSeparator = '.'
+      decimalSeparator = '.';
     }
 
     return {
       decimalSeparator,
       thousandSeparator
-    }
+    };
   }
 
   getNumberRegex(g, ignoreDecimalSeperator) {
@@ -129,7 +129,7 @@ class NumberFormat extends React.Component {
     return {
         value : this.getNonFormattedValue(formattedValue),
         formattedValue : formattedValue
-    }
+    };
   }
 
   getNonFormattedValue(value) {
@@ -180,9 +180,10 @@ class NumberFormat extends React.Component {
         setting caret position within timeout of 0ms is required for mobile chrome,
         otherwise browser resets the caret position after we set it
         We are also setting it without timeout so that in normal browser we don't see the flickering
+        Workaround for this is setTimeout(() => this.setCaretPosition(el, cursorPos), 0);
+        But it creates problems in IE to get characters if type fast.
        */
       this.setCaretPosition(el, cursorPos);
-      // setTimeout(() => this.setCaretPosition(el, cursorPos), 0);
       if(callback) callback(e,value);
     });
 
@@ -227,8 +228,8 @@ class NumberFormat extends React.Component {
       type:'text',
       value:this.formatInput(this.state.value).formattedValue,
       onChange:this.onChange,
-      onKeyDown:this.onKeyDown,
-    })
+      onKeyDown:this.onKeyDown
+    });
 
     if( this.props.displayType === 'text'){
       return (<span {...props}>{this.state.value}</span>);
@@ -240,14 +241,14 @@ class NumberFormat extends React.Component {
         <CustomInput
           {...inputProps}
         />
-      )
+      );
     }
 
     return (
       <input
         {...inputProps}
       />
-    )
+    );
   }
 }
 
