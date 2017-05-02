@@ -202,50 +202,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	  }, {
-	    key: 'formatWithPattern',
-	    value: function formatWithPattern(str) {
-	      var _props2 = this.props,
-	          format = _props2.format,
-	          mask = _props2.mask;
-
-	      if (!format) return str;
-	      var hashCount = format.split('#').length - 1;
-	      var hashIdx = 0;
-	      var frmtdStr = format;
-
-	      for (var i = 0, ln = str.length; i < ln; i++) {
-	        if (i < hashCount) {
-	          hashIdx = frmtdStr.indexOf('#');
-	          frmtdStr = frmtdStr.replace('#', str[i]);
-	        }
-	      }
-
-	      var lastIdx = frmtdStr.lastIndexOf('#');
-
-	      if (mask) {
-	        return frmtdStr.replace(/#/g, mask);
-	      }
-	      return frmtdStr.substring(0, hashIdx + 1) + (lastIdx !== -1 ? frmtdStr.substring(lastIdx + 1, frmtdStr.length) : '');
-	    }
-	  }, {
 	    key: 'formatInput',
 	    value: function formatInput(val) {
-	      var _props3 = this.props,
-	          prefix = _props3.prefix,
-	          suffix = _props3.suffix,
-	          mask = _props3.mask,
-	          format = _props3.format;
-
-	      var _getSeparators2 = this.getSeparators(),
-	          thousandSeparator = _getSeparators2.thousandSeparator,
-	          decimalSeparator = _getSeparators2.decimalSeparator;
-
-	      var decimalPrecision = this.props.decimalPrecision;
-
-	      var maskPattern = format && typeof format == 'string' && !!mask;
-
-	      var numRegex = this.getNumberRegex(true);
-
 	      //change val to string if its number
 	      if (typeof val === 'number') val = val + '';
 
@@ -256,57 +214,39 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var hasNegative = negativeRegex.test(val);
 	      // Check number has 2 or more '-' values
 	      var removeNegative = doubleNegativeRegex.test(val);
-
-	      if (!val || !val.match(numRegex)) return { value: '', formattedValue: maskPattern ? '' : '' };
-	      var num = val.match(numRegex).join('');
-
-	      var formattedValue = num;
-
-	      if (format) {
-	        if (typeof format == 'string') {
-	          formattedValue = this.formatWithPattern(formattedValue);
-	        } else if (typeof format == 'function') {
-	          formattedValue = format(formattedValue);
+	      var formattedValue = val;
+	      if (this.props.format) {
+	        val = this.getNonFormattedValue(val);
+	        formattedValue = this.props.format(val);
+	        if (this.props.allowNegative && hasNegative && !removeNegative) {
+	          formattedValue = '-' + formattedValue;
 	        }
-	      } else {
-	        var beforeDecimal = formattedValue,
-	            afterDecimal = '';
-	        var hasDecimals = formattedValue.indexOf(decimalSeparator) !== -1 || decimalPrecision !== false;
-	        if (decimalSeparator && hasDecimals) {
-	          var parts = void 0;
-	          if (decimalPrecision !== false) {
-	            var precision = decimalPrecision === true ? 2 : decimalPrecision;
-	            if (decimalSeparator !== '.') {
-	              // Replace custom decimalSeparator with '.' for parseFloat function
-	              parts = parseFloat(formattedValue.replace(decimalSeparator, '.')).toFixed(precision);
-	              // Put custom decimalSeparator back
-	              parts = parts.replace('.', decimalSeparator);
-	            } else {
-	              parts = parseFloat(formattedValue).toFixed(precision);
-	            }
-	            parts = parts.split(decimalSeparator);
-	          } else {
-	            parts = formattedValue.split(decimalSeparator);
-	          }
-	          beforeDecimal = parts[0];
-	          afterDecimal = parts[1];
-	        }
-	        if (thousandSeparator) {
-	          beforeDecimal = beforeDecimal.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1' + thousandSeparator);
-	        }
-	        //add prefix and suffix
-	        if (prefix) beforeDecimal = prefix + beforeDecimal;
-	        if (suffix) afterDecimal = afterDecimal + suffix;
-
-	        if (this.props.allowNegative && hasNegative && !removeNegative) beforeDecimal = '-' + beforeDecimal;
-
-	        formattedValue = beforeDecimal + (hasDecimals && decimalSeparator || '') + afterDecimal;
 	      }
-
 	      return {
-	        value: formattedValue.match(numRegex).join(''),
+	        value: this.getNonFormattedValue(formattedValue),
 	        formattedValue: formattedValue
 	      };
+	    }
+	  }, {
+	    key: 'getNonFormattedValue',
+	    value: function getNonFormattedValue(value) {
+	      var separator = this.props.thousandSeparator ? this.props.thousandSeparator : ',';
+	      var val = value.split(separator).join('');
+	      if (this.props.decimalSeparator !== '.') {
+	        val = val.replace(/,/g, '.');
+	      }
+	      var doubleDecimalRegex = new RegExp(/(.)*(\.)(.)*(\.)(.)*/);
+	      // Check number has 2 or more '.' values
+	      var ignoreDoubleDecimal = doubleDecimalRegex.test(val);
+	      if (ignoreDoubleDecimal) {
+	        val = this.getNonFormattedValue(this.state.value);
+	      }
+	      val = val.replace(/[^\d\.]/g, '');
+	      if (val && this.props.decimalPrecision !== false) {
+	        var precision = this.props.decimalPrecision === true ? 2 : this.props.decimalPrecision;
+	        val = val.toString().match('^-?\\d+(?:\\.\\d{0,' + (precision || -1) + '})?')[0];
+	      }
+	      return val;
 	    }
 	  }, {
 	    key: 'getCursorPosition',
@@ -349,9 +289,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          We are also setting it without timeout so that in normal browser we don't see the flickering
 	         */
 	        _this2.setCaretPosition(el, cursorPos);
-	        setTimeout(function () {
-	          return _this2.setCaretPosition(el, cursorPos);
-	        }, 0);
+	        // setTimeout(() => this.setCaretPosition(el, cursorPos), 0);
 	        if (callback) callback(e, value);
 	      });
 
