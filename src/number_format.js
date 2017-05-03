@@ -28,7 +28,6 @@ const propTypes = {
 };
 
 const defaultProps = {
-  id: 'number_format',
   displayType: 'input',
   decimalSeparator: '.',
   decimalPrecision: false
