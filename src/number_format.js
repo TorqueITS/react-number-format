@@ -119,7 +119,7 @@ class NumberFormat extends React.Component {
     // Check number has 2 or more '-' values
     const removeNegative = doubleNegativeRegex.test(val);
     let formattedValue = val;
-    if(this.props.format){
+    if(this.props.format && val){
         val = this.getNonFormattedValue(val);
         formattedValue = this.props.format(val);
         if (this.props.allowNegative && hasNegative && !removeNegative) {
@@ -133,8 +133,11 @@ class NumberFormat extends React.Component {
   }
 
   getNonFormattedValue(value) {
-    const separator = this.props.thousandSeparator ? this.props.thousandSeparator : ',';
-    let val = value.split(separator).join('');
+    let val = value;
+    if (this.props.thousandSeparator !== false) {
+        const separator = this.props.thousandSeparator ? this.props.thousandSeparator : ',';
+        val = value.split(separator).join('');
+    }
     if (this.props.decimalSeparator !== '.') {
         val = val.replace(/,/g, '.');
     }
@@ -144,6 +147,7 @@ class NumberFormat extends React.Component {
     if (ignoreDoubleDecimal) {
         val = this.getNonFormattedValue(this.state.value);
     }
+    // remove non numeric characters
     val = val.replace(/[^\d\.]/g, '');
     if (val && this.props.decimalPrecision !== false) {
         const precision = this.props.decimalPrecision === true ? 2 : this.props.decimalPrecision;
