@@ -41,13 +41,22 @@ class NumberFormat extends React.Component {
     };
     this.onChange = this.onChange.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
+    this.getInitialformattedNumber = this.getInitialformattedNumber.bind(this);
   }
 
   componentWillReceiveProps(newProps) {
-    if(newProps.value !== this.props.value) {
+    if(newProps.value !== this.props.value || newProps.format !== this.props.format) {
       this.setState({
-        value : newProps.value
+        value : this.getInitialformattedNumber(newProps.value)
       });
+    }
+  }
+
+  getInitialformattedNumber (value) {
+    if (!value || value === '-' || value === this.props.decimalSeparator || value === '-' + this.props.decimalSeparator) {
+        return value;
+    } else if (value){
+        return this.props.format(value);
     }
   }
 
@@ -121,8 +130,12 @@ class NumberFormat extends React.Component {
     let nonFormattedValue = val;
     // handle '-', '.|,' and '-.|-,'
     if (formattedValue === '-' || formattedValue === this.props.decimalSeparator || formattedValue === '-' + this.props.decimalSeparator) {
+        formattedValue = this.getNonFormattedValue(formattedValue);
+        if (this.props.allowNegative && hasNegative && !removeNegative) {
+            formattedValue = '-' + formattedValue;
+        }
         return {
-            value : this.getNonFormattedValue(formattedValue),
+            value : formattedValue,
             formattedValue : formattedValue
         };
     }
@@ -134,11 +147,11 @@ class NumberFormat extends React.Component {
         };
     }
     if(this.props.format && val){
-        val = this.getNonFormattedValue(val);
-        formattedValue = this.props.format(val);
+        nonFormattedValue = this.getNonFormattedValue(val);
+        formattedValue = this.props.format(nonFormattedValue);
         if (this.props.allowNegative && hasNegative && !removeNegative) {
             formattedValue = '-' + formattedValue;
-            nonFormattedValue = '-' + val;
+            nonFormattedValue = '-' + nonFormattedValue;
         }
     }
     return {
@@ -249,7 +262,7 @@ class NumberFormat extends React.Component {
 
     const inputProps = Object.assign({}, props, {
       type:'text',
-      value:this.formatInput(this.state.value).formattedValue,
+      value:this.state.value,
       onChange:this.onChange,
       onKeyDown:this.onKeyDown
     });
