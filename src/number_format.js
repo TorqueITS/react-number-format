@@ -36,12 +36,12 @@ const defaultProps = {
 class NumberFormat extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      value: props.value
-    };
     this.onChange = this.onChange.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
     this.getInitialformattedNumber = this.getInitialformattedNumber.bind(this);
+    this.state = {
+      value: this.getInitialformattedNumber(props.value)
+    };
   }
 
   componentWillReceiveProps(newProps) {
@@ -53,11 +53,12 @@ class NumberFormat extends React.Component {
   }
 
   getInitialformattedNumber (value) {
-    if (!value || value === '-' || value === this.props.decimalSeparator || value === '-' + this.props.decimalSeparator) {
+    if (value === '-' || value === this.props.decimalSeparator || value === '-' + this.props.decimalSeparator) {
         return value;
-    } else if (value){
-        return this.props.format(value);
+    } else if (this.props.value === null){
+        return '';
     }
+    return this.props.format(value);
   }
 
   getSeparators() {
