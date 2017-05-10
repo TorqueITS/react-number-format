@@ -53,9 +53,9 @@ class NumberFormat extends React.Component {
   }
 
   getInitialformattedNumber (value) {
-    if (value === '-' || value === this.props.decimalSeparator || value === '-' + this.props.decimalSeparator) {
+    if (value === '' || value === '-' || value === this.props.decimalSeparator || value === '-' + this.props.decimalSeparator) {
         return value;
-    } else if (this.props.value === null){
+    } else if (value === null){
         return '';
     }
     return this.props.format(value);
