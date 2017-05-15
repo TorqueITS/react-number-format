@@ -36,19 +36,29 @@ const defaultProps = {
 class NumberFormat extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      value: props.value
-    };
     this.onChange = this.onChange.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
+    this.getInitialformattedNumber = this.getInitialformattedNumber.bind(this);
+    this.state = {
+      value: this.getInitialformattedNumber(props.value)
+    };
   }
 
   componentWillReceiveProps(newProps) {
-    if(newProps.value !== this.props.value) {
+    if(newProps.value !== this.props.value || newProps.format !== this.props.format) {
       this.setState({
-        value : newProps.value
+        value : this.getInitialformattedNumber(newProps.value)
       });
     }
+  }
+
+  getInitialformattedNumber (value) {
+    if (value === '' || value === '-' || value === this.props.decimalSeparator || value === '-' + this.props.decimalSeparator) {
+        return value;
+    } else if (value === null){
+        return '';
+    }
+    return this.props.format(value);
   }
 
   getSeparators() {
@@ -118,48 +128,65 @@ class NumberFormat extends React.Component {
     // Check number has 2 or more '-' values
     const removeNegative = doubleNegativeRegex.test(val);
     let formattedValue = val;
-    if (formattedValue === '-' || formattedValue === this.props.decimalSeparator) {
-        return {
-            value : this.getNonFormattedValue(formattedValue),
-            formattedValue : formattedValue
-        };
-    }
-    if(this.props.format && val){
-        val = this.getNonFormattedValue(val);
-        formattedValue = this.props.format(val);
+    let nonFormattedValue = val;
+    // handle '-', '.|,' and '-.|-,'
+    if (formattedValue === '-' || formattedValue === this.props.decimalSeparator || formattedValue === '-' + this.props.decimalSeparator) {
+        formattedValue = this.getNonFormattedValue(formattedValue);
         if (this.props.allowNegative && hasNegative && !removeNegative) {
             formattedValue = '-' + formattedValue;
         }
+        return {
+            value : formattedValue,
+            formattedValue : formattedValue
+        };
+    }
+    // handle start with any non digit charactor
+    if (formattedValue && formattedValue.replace(/[^\d]/g, '') === '') {
+        return {
+            value : '',
+            formattedValue : ''
+        };
+    }
+    if(this.props.format && val){
+        nonFormattedValue = this.getNonFormattedValue(val);
+        formattedValue = this.props.format(nonFormattedValue);
+        if (this.props.allowNegative && hasNegative && !removeNegative) {
+            formattedValue = '-' + formattedValue;
+            nonFormattedValue = '-' + nonFormattedValue;
+        }
     }
     return {
-        value : this.getNonFormattedValue(formattedValue),
+        value : nonFormattedValue,
         formattedValue : formattedValue
     };
   }
 
   getNonFormattedValue(value) {
-    let val = value;
-    if (this.props.thousandSeparator !== false) {
-        const separator = this.props.thousandSeparator ? this.props.thousandSeparator : ',';
-        val = value.split(separator).join('');
+    if (value) {
+        let val = value;
+        if (this.props.thousandSeparator !== false) {
+            const separator = this.props.thousandSeparator ? this.props.thousandSeparator : ',';
+            val = value.split(separator).join('');
+        }
+        if (this.props.decimalSeparator !== '.') {
+            val = val.replace(/,/g, '.');
+        }
+        const doubleDecimalRegex = new RegExp(/(.)*(\.)(.)*(\.)(.)*/);
+        // Check number has 2 or more '.' values
+        const ignoreDoubleDecimal = doubleDecimalRegex.test(val);
+        if (ignoreDoubleDecimal) {
+            val = this.getNonFormattedValue(this.state.value);
+        }
+        // remove non numeric characters
+        val = val.replace(/[^\d\.]/g, '');
+        if (val && this.props.decimalPrecision !== false) {
+            const precision = this.props.decimalPrecision === true ? 2 : this.props.decimalPrecision;
+            const roundedValue = val.toString().match('^-?\\d+(?:\\.\\d{0,' + (precision || -1) + '})?');
+            val = roundedValue ? roundedValue[0] : val;
+        }
+        return val;
     }
-    if (this.props.decimalSeparator !== '.') {
-        val = val.replace(/,/g, '.');
-    }
-    const doubleDecimalRegex = new RegExp(/(.)*(\.)(.)*(\.)(.)*/);
-    // Check number has 2 or more '.' values
-    const ignoreDoubleDecimal = doubleDecimalRegex.test(val);
-    if (ignoreDoubleDecimal) {
-        val = this.getNonFormattedValue(this.state.value);
-    }
-    // remove non numeric characters
-    val = val.replace(/[^\d\.]/g, '');
-    if (val && this.props.decimalPrecision !== false) {
-        const precision = this.props.decimalPrecision === true ? 2 : this.props.decimalPrecision;
-        const roundedValue = val.toString().match('^-?\\d+(?:\\.\\d{0,' + (precision || -1) + '})?');
-        val = roundedValue ? roundedValue[0] : val;
-    }
-    return val;
+    return value;
   }
 
   getCursorPosition(inputValue, formattedValue, cursorPos) {
@@ -236,7 +263,7 @@ class NumberFormat extends React.Component {
 
     const inputProps = Object.assign({}, props, {
       type:'text',
-      value:this.formatInput(this.state.value).formattedValue,
+      value:this.state.value,
       onChange:this.onChange,
       onKeyDown:this.onKeyDown
     });
